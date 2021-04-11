@@ -94,26 +94,29 @@ void tree_report(char path[NAME_MAX], int level) {
         dir = readdir(folder);
         list_of_paths[i] = calloc(strlen(dir->d_name) + 1, sizeof(char));
         strcpy(list_of_paths[i], dir->d_name);
+        printf("directory: %s\n", dir->d_name);
     }
     closedir(folder); //close after reading all files in directory
 
     //sort 2D array of paths in current directory in alphabetical order using bubble sort
     char *temp;
     for (int i = 0; i < num_paths-1; i++) {
-        for (int j = i+1; j < num_paths; j++) {
-            if (strcmp(list_of_paths[i], list_of_paths[j]) > 0) {
-                temp = list_of_paths[i];
-                list_of_paths[i] = list_of_paths[j];
-                list_of_paths[j] = temp;
+        for (int j = 0; j < num_paths-i-1; j++) {
+            if (strcmp(list_of_paths[j], list_of_paths[j+1]) > 0) {
+                temp = list_of_paths[j];
+                list_of_paths[j] = list_of_paths[j+1];
+                list_of_paths[j+1] = temp;
             }
         }
     }
 
     printf("\nLevel %d: %s\n", level, path);
+
     //printing directories only
     int header_printed = 0;
-    for (int i = 0; i < num_paths - 1; i++) {
+    for (int i = 0; i < num_paths; i++) {
         //skip hidden files representing parent (..) and current (.) directory
+        printf("file %d: %s\n", i, list_of_paths[i]);
         if (strcmp(list_of_paths[i], ".") == 0 || strcmp(list_of_paths[i], "..") == 0) continue;
         //add directory name to path to get attributes of file
         strcpy(cur_path, path);
@@ -132,7 +135,7 @@ void tree_report(char path[NAME_MAX], int level) {
 
     //printing files only
     header_printed = 0;
-    for (int i = 0; i < num_paths - 1; i++) {
+    for (int i = 0; i < num_paths; i++) {
         //skip hidden files representing parent (..) and current (.) directory
         if (strcmp(list_of_paths[i], ".") == 0 || strcmp(list_of_paths[i], "..") == 0) continue;
         //add filename to path
@@ -150,7 +153,7 @@ void tree_report(char path[NAME_MAX], int level) {
     memset(cur_path, '\0', strlen(cur_path));
 
     //recursively explore subdirectories
-    for (int i = 0; i < num_paths - 1; i++) {
+    for (int i = 0; i < num_paths; i++) {
         //skip hidden files representing parent (..) and current (.) directory
         if (strcmp(list_of_paths[i], ".") == 0 || strcmp(list_of_paths[i], "..") == 0) continue;
         //add filename or directory name to path
