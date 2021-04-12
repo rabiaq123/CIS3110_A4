@@ -10,6 +10,11 @@
 #include <pwd.h>
 #include <math.h>
 
+/**
+ * Name: Rabia Qureshi
+ * Student #: 1046427
+ * E-mail: rqureshi@uoguelph.ca
+ */
 
 typedef struct stat Stat; //so we can just use 'Stat' to declare a new stat struct
 
