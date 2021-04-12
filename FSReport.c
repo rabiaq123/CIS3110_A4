@@ -67,17 +67,18 @@ void print_file_properties(struct stat stats, char filename[NAME_MAX]) {
 /**
  * tree report generation
  * read all directories and perform recursive calls until all subdirectories have been read
- * @param path the root directory from which further recursive calls may be made
+ * @param full_path the root directory from which further recursive calls may be made
  * @param level level of directory at which recursive call is (starts at 1)
+ * @param path name of file directory on its own
  */
-void tree_report(char path[NAME_MAX], int level) {
+void tree_report(char full_path[NAME_MAX], int level, char *path) {
     DIR *folder;
     Stat stats; 
     struct dirent *dir;
     char cur_path[PATH_MAX] = {'\0'}; //could be the root dir or subdir depending on recursive call
     int num_paths = 0; //includes files and directories
 
-    folder = opendir(path);
+    folder = opendir(full_path);
     if (!folder) return;
 
     //get num paths
@@ -88,65 +89,66 @@ void tree_report(char path[NAME_MAX], int level) {
     create and populate 2D array of the names of the paths in current directory only
     array will contain only the name of the directory/file itself
     */
-    folder = opendir(path);
+    folder = opendir(full_path);
     char **list_of_paths = calloc(num_paths, sizeof(char*)); //paths in current directory
     for (int i = 0; i < num_paths; i++) {
         dir = readdir(folder);
         list_of_paths[i] = calloc(strlen(dir->d_name) + 1, sizeof(char));
         strcpy(list_of_paths[i], dir->d_name);
-        printf("directory: %s\n", dir->d_name);
     }
     closedir(folder); //close after reading all files in directory
 
     //sort 2D array of paths in current directory in alphabetical order using bubble sort
     char *temp;
     for (int i = 0; i < num_paths-1; i++) {
-        for (int j = 0; j < num_paths-i-1; j++) {
-            if (strcmp(list_of_paths[j], list_of_paths[j+1]) > 0) {
-                temp = list_of_paths[j];
-                list_of_paths[j] = list_of_paths[j+1];
-                list_of_paths[j+1] = temp;
+        for (int j = i+1; j < num_paths; j++) {
+            if (strcmp(list_of_paths[i], list_of_paths[j]) > 0) {
+                temp = list_of_paths[i];
+                list_of_paths[i] = list_of_paths[j];
+                list_of_paths[j] = temp;
             }
         }
     }
 
-    printf("\nLevel %d: %s\n", level, path);
+    //if Level 1 then put the full path name otherwise just the directory name
+    if (level == 1) printf("\nLevel %d: %s\n", level, full_path);
+    else printf("\nLevel %d: %s\n", level, path);
 
     //printing directories only
-    int header_printed = 0;
+    int dir_header_printed = 0;
     for (int i = 0; i < num_paths; i++) {
         //skip hidden files representing parent (..) and current (.) directory
-        printf("file %d: %s\n", i, list_of_paths[i]);
         if (strcmp(list_of_paths[i], ".") == 0 || strcmp(list_of_paths[i], "..") == 0) continue;
         //add directory name to path to get attributes of file
-        strcpy(cur_path, path);
+        strcpy(cur_path, full_path);
         strcat(cur_path, "/");
         strcat(cur_path, list_of_paths[i]);
         //attempt to get attributes of file
         if (stat(cur_path, &stats) != 0) printf("Unable to get directory properties for %s\n.", list_of_paths[i]); 
         if (!S_ISDIR(stats.st_mode)) continue;
-        if (!header_printed) {
+        if (!dir_header_printed) {
             printf("Directories\n");
-            header_printed = 1;
+            dir_header_printed = 1;
         }
         print_file_properties(stats, list_of_paths[i]);
     }
     memset(cur_path, '\0', strlen(cur_path));
 
     //printing files only
-    header_printed = 0;
+    int files_header_printed = 0;
     for (int i = 0; i < num_paths; i++) {
         //skip hidden files representing parent (..) and current (.) directory
         if (strcmp(list_of_paths[i], ".") == 0 || strcmp(list_of_paths[i], "..") == 0) continue;
         //add filename to path
-        strcpy(cur_path, path);
+        strcpy(cur_path, full_path);
         strcat(cur_path, "/");
         strcat(cur_path, list_of_paths[i]);
         if (stat(cur_path, &stats) != 0) printf("Unable to get file properties for %s\n.", list_of_paths[i]); 
         if (S_ISDIR(stats.st_mode)) continue;
-        if (!header_printed) {
+        if (!files_header_printed) {
+            if (dir_header_printed) printf("\n"); //add space between directories and files sections if both exist
             printf("Files\n");
-            header_printed = 1;
+            files_header_printed = 1;
         }
         print_file_properties(stats, list_of_paths[i]);        
     }
@@ -157,11 +159,11 @@ void tree_report(char path[NAME_MAX], int level) {
         //skip hidden files representing parent (..) and current (.) directory
         if (strcmp(list_of_paths[i], ".") == 0 || strcmp(list_of_paths[i], "..") == 0) continue;
         //add filename or directory name to path
-        strcpy(cur_path, path);
+        strcpy(cur_path, full_path);
         strcat(cur_path, "/");
         strcat(cur_path, list_of_paths[i]);
         if (stat(cur_path, &stats) != 0) printf("Unable to get file properties for %s\n.", list_of_paths[i]); 
-        if (S_ISDIR(stats.st_mode)) tree_report(cur_path, level + 1); //if path is directory, go a level deeper
+        if (S_ISDIR(stats.st_mode)) tree_report(cur_path, level + 1, list_of_paths[i]); //if directory, go a level deeper
     }
 }
 
@@ -174,13 +176,13 @@ int main(int argc, char *argv[]) {
     }
 
     char report_type[10] = {'\0'};
-    char path[NAME_MAX] = {'\0'};
+    char full_path[NAME_MAX] = {'\0'}, path[NAME_MAX] = {'\0'};
 
     //parse report type ()-tree or -inode) and full path of root directory
     strcpy(report_type, argv[1]);
-    strcpy(path, argv[2]);
+    strcpy(full_path, argv[2]);
 
-    if (strcmp(report_type, "-tree") == 0) tree_report(path, 1);
+    if (strcmp(report_type, "-tree") == 0) tree_report(full_path, 1, path);
 
     return 0;
 }
