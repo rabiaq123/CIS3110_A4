@@ -17,8 +17,8 @@ This assignment asked us to generate reports about the file system (to STDOUT) t
 * Type `make`
 * To run: `./FSReport (type of report to be generated) (full path name of root directory)`
     * the type of report to be generated will be either 
-      * -tree for tree directory structure format
-      * -inode for inode format
+        * -tree for tree directory structure format
+        * -inode for inode format
     * the full path name of the root directory is where the descriptions will start
 
 ## Statement of Individual Work
